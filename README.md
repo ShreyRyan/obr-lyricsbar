@@ -7,7 +7,7 @@
 1. 打开 [Owlbear Rodeo](https://owlbear.app/profile)
 2. 进入 Profile → 点击 **Add Extension**
 3. 填入扩展地址：https://shreyryan.github.io/obr-lyricsbar/manifest.json
-4. 打开拓展
+4. 打开扩展
 
 注：项目部署在github，如果安装不上，请科学上网
 
