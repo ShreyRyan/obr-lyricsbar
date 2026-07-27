@@ -44,9 +44,12 @@ export function mountDM(root) {
       </div>
 
       <div class="offset-controls">
-        <button id="btn-offset-minus" disabled>-0.5s</button>
-        <span id="offset-display" class="offset-display">偏移: 0.0s</span>
-        <button id="btn-offset-plus" disabled>+0.5s</button>
+        <button id="btn-offset-minus-05" disabled>-0.5s</button>
+        <button id="btn-offset-minus-01" disabled>-0.1s</button>
+        <input type="number" id="offset-input" class="offset-input" value="0.0" step="0.1" disabled />
+        <span class="offset-unit">s</span>
+        <button id="btn-offset-plus-01" disabled>+0.1s</button>
+        <button id="btn-offset-plus-05" disabled>+0.5s</button>
       </div>
 
       <div class="lyrics-preview" id="lyrics-preview">
@@ -63,15 +66,16 @@ function bindEvents(root) {
   const pasteArea = root.querySelector("#paste-area");
   const btnParsePaste = root.querySelector("#btn-parse-paste");
   const importStatus = root.querySelector("#import-status");
-  const lyricsPreview = root.querySelector("#lyrics-preview");
 
   const btnPlay = root.querySelector("#btn-play");
   const btnPause = root.querySelector("#btn-pause");
   const btnResume = root.querySelector("#btn-resume");
   const btnToggle = root.querySelector("#btn-toggle-visibility");
-  const btnOffsetMinus = root.querySelector("#btn-offset-minus");
-  const btnOffsetPlus = root.querySelector("#btn-offset-plus");
-  const offsetDisplay = root.querySelector("#offset-display");
+  const btnOffsetMinus05 = root.querySelector("#btn-offset-minus-05");
+  const btnOffsetMinus01 = root.querySelector("#btn-offset-minus-01");
+  const btnOffsetPlus01 = root.querySelector("#btn-offset-plus-01");
+  const btnOffsetPlus05 = root.querySelector("#btn-offset-plus-05");
+  const offsetInput = root.querySelector("#offset-input");
 
   const songNameInput = root.querySelector("#song-name");
   const songArtistInput = root.querySelector("#song-artist");
@@ -108,24 +112,35 @@ function bindEvents(root) {
   });
   btnParsePaste.disabled = true;
 
-  btnPlay.addEventListener("click", () => startLyrics(btnPlay, btnPause, btnResume, btnOffsetMinus, btnOffsetPlus));
+  btnPlay.addEventListener("click", () => startLyrics(btnPlay, btnPause, btnResume, btnToggle, btnOffsetMinus05, btnOffsetMinus01, btnOffsetPlus01, btnOffsetPlus05, offsetInput));
   btnPause.addEventListener("click", () => pauseLyrics(btnPlay, btnPause, btnResume));
   btnResume.addEventListener("click", () => resumeLyrics(btnPlay, btnPause, btnResume));
   btnToggle.addEventListener("click", toggleVisibility);
-  btnOffsetMinus.addEventListener("click", () => shiftOffset(-0.5, offsetDisplay));
-  btnOffsetPlus.addEventListener("click", () => shiftOffset(0.5, offsetDisplay));
+  btnOffsetMinus05.addEventListener("click", () => shiftOffset(-0.5, offsetInput));
+  btnOffsetMinus01.addEventListener("click", () => shiftOffset(-0.1, offsetInput));
+  btnOffsetPlus01.addEventListener("click", () => shiftOffset(0.1, offsetInput));
+  btnOffsetPlus05.addEventListener("click", () => shiftOffset(0.5, offsetInput));
+
+  offsetInput.addEventListener("change", () => {
+    const val = parseFloat(offsetInput.value);
+    if (!isNaN(val)) setOffset(val, offsetInput);
+  });
 }
 
-async function startLyrics(btnPlay, btnPause, btnResume, btnToggle, btnOffsetMinus, btnOffsetPlus) {
+async function startLyrics(btnPlay, btnPause, btnResume, btnToggle, btnM05, btnM01, btnP01, btnP05, offsetInput) {
   btnPlay.classList.add("hidden");
   btnPause.classList.remove("hidden");
   btnResume.classList.add("hidden");
   btnToggle.classList.remove("hidden");
   btnToggle.textContent = "👁‍ 隐藏";
-  btnOffsetMinus.disabled = false;
-  btnOffsetPlus.disabled = false;
+  btnM05.disabled = false;
+  btnM01.disabled = false;
+  btnP01.disabled = false;
+  btnP05.disabled = false;
+  offsetInput.disabled = false;
   latestOffset = 0;
   isVisible = true;
+  offsetInput.value = "0.0";
 
   currentState = { elapsed: 0, isPlaying: true, offset: 0, timestamp: Date.now() };
   startPreviewLoop();
@@ -160,12 +175,21 @@ async function toggleVisibility() {
   await pushState();
 }
 
-async function shiftOffset(delta, offsetDisplay) {
+async function shiftOffset(delta, offsetInput) {
   latestOffset += delta;
   currentState.elapsed = computeElapsed();
   currentState.offset = latestOffset;
   currentState.timestamp = Date.now();
-  offsetDisplay.textContent = `偏移: ${latestOffset.toFixed(1)}s`;
+  offsetInput.value = latestOffset.toFixed(1);
+  await pushState();
+}
+
+async function setOffset(value, offsetInput) {
+  latestOffset = value;
+  currentState.elapsed = computeElapsed();
+  currentState.offset = latestOffset;
+  currentState.timestamp = Date.now();
+  offsetInput.value = latestOffset.toFixed(1);
   await pushState();
 }
 
