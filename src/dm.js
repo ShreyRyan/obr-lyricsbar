@@ -1,4 +1,4 @@
-import { setupFileImport, parseTextInput } from "./import.js";
+import { readFile, parseTextInput } from "./import.js";
 import { setState } from "./sync.js";
 
 let selectedSong = null;
@@ -23,13 +23,9 @@ export function mountDM(root) {
       </div>
 
       <div class="import-section">
-        <div class="import-divider"><span>拖拽或选择文件</span></div>
-        <div id="drop-zone" class="drop-zone">
-          <div class="drop-zone-content">
-            <span class="drop-icon">📁</span>
-            <span>拖拽 .lrc 文件到此处</span>
-            <span class="drop-hint">或点击选择文件</span>
-          </div>
+        <div class="import-file-row">
+          <button id="btn-select-file" class="btn-file">📁 选择 .lrc 文件</button>
+          <span id="file-name" class="file-name"></span>
         </div>
         <div class="import-divider"><span>或直接粘贴</span></div>
         <textarea id="paste-area" class="paste-area" placeholder="粘贴 LRC 歌词内容...&#10;&#10;示例格式：&#10;[00:13.10]第一句歌词&#10;[00:17.25]第二句歌词" rows="6"></textarea>
@@ -62,10 +58,11 @@ export function mountDM(root) {
 }
 
 function bindEvents(root) {
-  const dropZone = root.querySelector("#drop-zone");
   const pasteArea = root.querySelector("#paste-area");
   const btnParsePaste = root.querySelector("#btn-parse-paste");
   const importStatus = root.querySelector("#import-status");
+  const btnSelectFile = root.querySelector("#btn-select-file");
+  const fileNameDisplay = root.querySelector("#file-name");
 
   const btnPlay = root.querySelector("#btn-play");
   const btnPause = root.querySelector("#btn-pause");
@@ -100,7 +97,21 @@ function bindEvents(root) {
     renderPreview(0);
   }
 
-  setupFileImport(dropZone, onImportResult);
+  const fileInput = document.createElement("input");
+  fileInput.type = "file";
+  fileInput.accept = ".lrc,.txt";
+  fileInput.style.display = "none";
+  root.appendChild(fileInput);
+
+  btnSelectFile.addEventListener("click", () => fileInput.click());
+
+  fileInput.addEventListener("change", () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    fileNameDisplay.textContent = file.name;
+    readFile(file, onImportResult);
+    fileInput.value = "";
+  });
 
   btnParsePaste.addEventListener("click", () => {
     const result = parseTextInput(pasteArea.value);

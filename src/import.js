@@ -1,49 +1,6 @@
 import { parseLRC } from "./lrc.js";
 
-export function setupFileImport(dropZone, callback) {
-  dropZone.addEventListener("dragover", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dropZone.classList.add("drag-over");
-  });
-
-  dropZone.addEventListener("dragleave", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dropZone.classList.remove("drag-over");
-  });
-
-  dropZone.addEventListener("drop", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dropZone.classList.remove("drag-over");
-
-    const file = e.dataTransfer.files[0];
-    if (!file) return;
-    if (!file.name.endsWith(".lrc") && !file.name.endsWith(".txt")) {
-      callback({ error: "请选择 .lrc 或 .txt 文件" });
-      return;
-    }
-    readFile(file, callback);
-  });
-
-  const hiddenInput = document.createElement("input");
-  hiddenInput.type = "file";
-  hiddenInput.accept = ".lrc,.txt";
-  hiddenInput.style.display = "none";
-  dropZone.appendChild(hiddenInput);
-
-  dropZone.addEventListener("click", () => hiddenInput.click());
-
-  hiddenInput.addEventListener("change", () => {
-    const file = hiddenInput.files[0];
-    if (!file) return;
-    readFile(file, callback);
-    hiddenInput.value = "";
-  });
-}
-
-function readFile(file, callback) {
+export function readFile(file, callback) {
   const reader = new FileReader();
   reader.onload = () => {
     const text = reader.result;
