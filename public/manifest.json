@@ -7,7 +7,7 @@
   "action": {
     "title": "歌词同步",
     "icon": "icon.svg",
-    "popover": "./",
+    "popover": "/obr-lyricsbar/lyrics-bar.html",
     "height": 560,
     "width": 360
   }
