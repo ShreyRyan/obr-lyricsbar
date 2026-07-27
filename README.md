@@ -6,12 +6,10 @@
 
 1. 打开 [Owlbear Rodeo](https://owlbear.app/profile)
 2. 进入 Profile → 点击 **Add Extension**
-3. 填入扩展地址（替换为你的部署地址）：
-   ```
-   开发: http://localhost:5173/manifest.json
-   生产: https://<你的域名>/manifest.json
-   ```
-4. 创建房间时勾选启用「网易云歌词同步」
+3. 填入扩展地址：https://shreyryan.github.io/obr-lyricsbar/manifest.json
+4. 打开拓展
+
+注：项目部署在github，如果安装不上，请科学上网
 
 ## 使用说明
 
@@ -34,20 +32,4 @@
 4. 需要中断歌词时使用「⏸ 暂停」/「▶ 继续」
 
 ### PL
-1. 点击左上角「歌词同步」按钮
-2. 自动看到 DM 正在播放的歌词，实时高亮滚动
-
-## 开发
-
-```bash
-npm install
-npm run dev
-```
-
-## 部署
-
-```bash
-npm run build
-```
-
-将 `dist/` 目录部署到任意静态托管服务（GitHub Pages、Vercel、Netlify 等）。
+**无需任何操作！**
