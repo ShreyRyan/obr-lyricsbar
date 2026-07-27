@@ -66,7 +66,7 @@ export function mountPL(root) {
     try {
       await OBR.popover.open({
         id: POPOVER_ID,
-        url: "/lyrics-bar.html",
+        url: "/obr-lyricsbar/lyrics-bar.html",
         width: 600,
         height: 68,
         hidePaper: true,
