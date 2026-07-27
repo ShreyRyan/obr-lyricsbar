@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "manifest_version": 1,
   "description": "同步显示音乐歌词给PL，支持 LRC 滚动歌词与手动微调偏移",
-  "icon": "icon.svg",
+  "icon": "/obr-lyricsbar/icon.svg",
   "action": {
     "title": "歌词同步",
-    "icon": "icon.svg",
+    "icon": "/obr-lyricsbar/icon.svg",
     "popover": "/obr-lyricsbar/lyrics-bar.html",
     "height": 560,
     "width": 360
