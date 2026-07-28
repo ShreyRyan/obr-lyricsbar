@@ -187,6 +187,7 @@ async function toggleVisibility() {
 }
 
 async function shiftOffset(delta, offsetInput) {
+  console.log("shiftOffset called:", delta, "current latestOffset:", latestOffset);
   latestOffset += delta;
   currentState.elapsed = computeElapsed();
   currentState.offset = latestOffset;
