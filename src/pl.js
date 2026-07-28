@@ -3,6 +3,7 @@ import { getState, onStateChange } from "./sync.js";
 
 const POPOVER_ID = "netease-lyrics-bar";
 const POS_NAMESPACE = "com.owlbear-netease-lyrics-pos";
+const LYRICS_URL = import.meta.env.DEV ? "/lyrics-bar.html" : LYRICS_URL;
 
 export function mountPL(root) {
   root.innerHTML = `
@@ -41,7 +42,7 @@ export function mountPL(root) {
 
       const base = {
         id: POPOVER_ID,
-        url: "/obr-lyricsbar/lyrics-bar.html",
+        url: LYRICS_URL,
         width: 600,
         height: 120,
         hidePaper: true,
@@ -72,7 +73,7 @@ export function mountPL(root) {
     try {
       await OBR.popover.open({
         id: POPOVER_ID,
-        url: "/obr-lyricsbar/lyrics-bar.html",
+        url: LYRICS_URL,
         width: 600,
         height: 120,
         hidePaper: true,
