@@ -185,98 +185,29 @@ body {
   justify-content: center;
 }
 
-.controls button {
+#btn-toggle-lyrics {
   padding: 8px 16px;
   border: none;
   border-radius: 6px;
-  cursor: pointer;
+  background: #ec4899;
+  color: #fff;
   font-size: 14px;
   font-weight: 500;
-  transition: opacity 0.2s, background 0.2s;
+  cursor: pointer;
+  transition: background 0.2s;
 }
 
-.controls button:disabled {
+#btn-toggle-lyrics:disabled {
   opacity: 0.35;
   cursor: not-allowed;
 }
 
-.controls button:not(:disabled):hover {
-  opacity: 0.85;
-}
-
-#btn-play,
-#btn-resume {
-  background: #ec4899;
-  color: #fff;
-}
-
-#btn-pause {
-  background: #f59e0b;
-  color: #fff;
+#btn-toggle-lyrics:not(:disabled):hover {
+  background: #db2777;
 }
 
 .hidden {
   display: none !important;
-}
-
-.offset-controls {
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-  align-items: center;
-}
-
-.offset-controls button {
-  padding: 6px 12px;
-  border: 1px solid #444;
-  border-radius: 6px;
-  background: #16213e;
-  color: #e0e0e0;
-  cursor: pointer;
-  font-size: 13px;
-  transition: border-color 0.2s;
-}
-
-.offset-controls button:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-.offset-controls button:not(:disabled):hover {
-  border-color: #ec4899;
-}
-
-.offset-input {
-  width: 56px;
-  padding: 4px 6px;
-  border: 1px solid #444;
-  border-radius: 6px;
-  background: #16213e;
-  color: #e0e0e0;
-  font-size: 13px;
-  text-align: center;
-  outline: none;
-  transition: border-color 0.2s;
-  -moz-appearance: textfield;
-}
-
-.offset-input::-webkit-inner-spin-button,
-.offset-input::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-.offset-input:focus {
-  border-color: #ec4899;
-}
-
-.offset-input:disabled {
-  opacity: 0.3;
-}
-
-.offset-unit {
-  font-size: 13px;
-  color: #888;
 }
 
 .lyrics-preview {

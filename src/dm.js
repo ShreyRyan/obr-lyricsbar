@@ -1,13 +1,13 @@
+import OBR from "@owlbear-rodeo/sdk";
 import { readFile, parseTextInput } from "./import.js";
 import { setState } from "./sync.js";
 
+const POPOVER_ID = "netease-lyrics-bar";
+
 let selectedSong = null;
 let lrcData = [];
-let currentState = { elapsed: 0, isPlaying: false, offset: 0, timestamp: 0 };
-let previewTimer = null;
-let latestOffset = 0;
-let isVisible = true;
 let lrcRaw = "";
+let lyricsActive = false;
 
 export function mountDM(root) {
   root.innerHTML = `
@@ -34,19 +34,7 @@ export function mountDM(root) {
       </div>
 
       <div class="controls">
-        <button id="btn-play" disabled>▶ 开始</button>
-        <button id="btn-pause" class="hidden">⏸ 暂停</button>
-        <button id="btn-resume" class="hidden">▶ 继续</button>
-        <button id="btn-toggle-visibility" class="hidden">👁‍ 隐藏</button>
-      </div>
-
-      <div class="offset-controls">
-        <button id="btn-offset-minus-05" disabled>-0.5s</button>
-        <button id="btn-offset-minus-01" disabled>-0.1s</button>
-        <input type="number" id="offset-input" class="offset-input" value="0.0" step="0.1" disabled />
-        <span class="offset-unit">s</span>
-        <button id="btn-offset-plus-01" disabled>+0.1s</button>
-        <button id="btn-offset-plus-05" disabled>+0.5s</button>
+        <button id="btn-toggle-lyrics" disabled>📢 开启歌词</button>
       </div>
 
       <div class="lyrics-preview" id="lyrics-preview">
@@ -64,16 +52,7 @@ function bindEvents(root) {
   const importStatus = root.querySelector("#import-status");
   const btnSelectFile = root.querySelector("#btn-select-file");
   const fileNameDisplay = root.querySelector("#file-name");
-
-  const btnPlay = root.querySelector("#btn-play");
-  const btnPause = root.querySelector("#btn-pause");
-  const btnResume = root.querySelector("#btn-resume");
-  const btnToggle = root.querySelector("#btn-toggle-visibility");
-  const btnOffsetMinus05 = root.querySelector("#btn-offset-minus-05");
-  const btnOffsetMinus01 = root.querySelector("#btn-offset-minus-01");
-  const btnOffsetPlus01 = root.querySelector("#btn-offset-plus-01");
-  const btnOffsetPlus05 = root.querySelector("#btn-offset-plus-05");
-  const offsetInput = root.querySelector("#offset-input");
+  const btnToggleLyrics = root.querySelector("#btn-toggle-lyrics");
 
   const songNameInput = root.querySelector("#song-name");
   const songArtistInput = root.querySelector("#song-artist");
@@ -95,7 +74,7 @@ function bindEvents(root) {
     selectedSong = { name, artist };
     importStatus.innerHTML = `<span>✅ 已解析 ${lrcData.length} 句歌词 — ${esc(name)} / ${esc(artist)}</span>`;
 
-    btnPlay.disabled = false;
+    btnToggleLyrics.disabled = false;
     renderPreview(0);
   }
 
@@ -125,120 +104,43 @@ function bindEvents(root) {
   });
   btnParsePaste.disabled = true;
 
-  btnPlay.addEventListener("click", () => startLyrics(btnPlay, btnPause, btnResume, btnToggle, btnOffsetMinus05, btnOffsetMinus01, btnOffsetPlus01, btnOffsetPlus05, offsetInput));
-  btnPause.addEventListener("click", () => pauseLyrics(btnPlay, btnPause, btnResume));
-  btnResume.addEventListener("click", () => resumeLyrics(btnPlay, btnPause, btnResume));
-  btnToggle.addEventListener("click", toggleVisibility);
-  btnOffsetMinus05.addEventListener("click", () => shiftOffset(-0.5, offsetInput));
-  btnOffsetMinus01.addEventListener("click", () => shiftOffset(-0.1, offsetInput));
-  btnOffsetPlus01.addEventListener("click", () => shiftOffset(0.1, offsetInput));
-  btnOffsetPlus05.addEventListener("click", () => shiftOffset(0.5, offsetInput));
+  btnToggleLyrics.addEventListener("click", async () => {
+    if (!lyricsActive) {
+      await setState({
+        songId: selectedSong.name,
+        songName: selectedSong.name,
+        artist: selectedSong.artist,
+        lrcRaw,
+        elapsed: 0,
+        isPlaying: false,
+        offset: 0,
+        timestamp: Date.now(),
+        visible: true,
+      });
 
-  offsetInput.addEventListener("change", () => {
-    const val = parseFloat(offsetInput.value);
-    if (!isNaN(val)) setOffset(val, offsetInput);
+      try {
+        await OBR.popover.open({
+          id: POPOVER_ID,
+          url: "/obr-lyricsbar/lyrics-bar.html",
+          width: 600,
+          height: 120,
+          hidePaper: true,
+          disableClickAway: true,
+          anchorOrigin: { horizontal: "CENTER", vertical: "BOTTOM" },
+          transformOrigin: { horizontal: "CENTER", vertical: "BOTTOM" },
+          marginThreshold: 8,
+        });
+      } catch {}
+
+      lyricsActive = true;
+      btnToggleLyrics.textContent = "📢 关闭歌词";
+    } else {
+      await setState(null);
+      try { await OBR.popover.close(POPOVER_ID); } catch {}
+      lyricsActive = false;
+      btnToggleLyrics.textContent = "📢 开启歌词";
+    }
   });
-}
-
-async function startLyrics(btnPlay, btnPause, btnResume, btnToggle, btnM05, btnM01, btnP01, btnP05, offsetInput) {
-  btnPlay.classList.add("hidden");
-  btnPause.classList.remove("hidden");
-  btnResume.classList.add("hidden");
-  btnToggle.classList.remove("hidden");
-  btnToggle.textContent = "👁‍ 隐藏";
-  btnM05.disabled = false;
-  btnM01.disabled = false;
-  btnP01.disabled = false;
-  btnP05.disabled = false;
-  offsetInput.disabled = false;
-  latestOffset = 0;
-  isVisible = true;
-  offsetInput.value = "0.0";
-
-  currentState = { elapsed: 0, isPlaying: true, offset: 0, timestamp: Date.now() };
-  startPreviewLoop();
-  await pushState();
-}
-
-async function pauseLyrics(btnPlay, btnPause, btnResume) {
-  btnPause.classList.add("hidden");
-  btnResume.classList.remove("hidden");
-  stopPreviewLoop();
-  currentState.elapsed = computeElapsed();
-  currentState.isPlaying = false;
-  currentState.timestamp = Date.now();
-  await pushState();
-}
-
-async function resumeLyrics(btnPlay, btnPause, btnResume) {
-  btnResume.classList.add("hidden");
-  btnPause.classList.remove("hidden");
-  currentState.isPlaying = true;
-  currentState.timestamp = Date.now();
-  startPreviewLoop();
-  await pushState();
-}
-
-async function toggleVisibility() {
-  isVisible = !isVisible;
-  const btn = document.getElementById("btn-toggle-visibility");
-  if (btn) {
-    btn.textContent = isVisible ? "👁‍ 隐藏" : "👁 显示";
-  }
-  await pushState();
-}
-
-async function shiftOffset(delta, offsetInput) {
-  latestOffset += delta;
-  currentState.elapsed = computeElapsed();
-  currentState.offset = latestOffset;
-  currentState.timestamp = Date.now();
-  offsetInput.value = latestOffset.toFixed(1);
-  await pushState();
-}
-
-async function setOffset(value, offsetInput) {
-  latestOffset = value;
-  currentState.elapsed = computeElapsed();
-  currentState.offset = latestOffset;
-  currentState.timestamp = Date.now();
-  offsetInput.value = latestOffset.toFixed(1);
-  await pushState();
-}
-
-function computeElapsed() {
-  if (!currentState.isPlaying) return currentState.elapsed;
-  return currentState.elapsed + (Date.now() - currentState.timestamp);
-}
-
-async function pushState() {
-  await setState({
-    songId: selectedSong?.name || "",
-    songName: selectedSong?.name || "",
-    artist: selectedSong?.artist || "",
-    lrcRaw: lrcRaw,
-    elapsed: computeElapsed(),
-    isPlaying: currentState.isPlaying,
-    offset: latestOffset,
-    timestamp: Date.now(),
-    visible: isVisible
-  });
-}
-
-function startPreviewLoop() {
-  clearInterval(previewTimer);
-  let lastIdx = -1;
-  previewTimer = setInterval(() => {
-    const sec = computeElapsed() / 1000 + latestOffset;
-    let idx = lrcData.findIndex(l => l.time > sec);
-    if (idx === -1) idx = lrcData.length;
-    if (idx !== lastIdx) { lastIdx = idx; renderPreview(idx); }
-  }, 150);
-}
-
-function stopPreviewLoop() {
-  clearInterval(previewTimer);
-  previewTimer = null;
 }
 
 function renderPreview(currentIdx) {
@@ -251,12 +153,18 @@ function renderPreview(currentIdx) {
     lrcData[currentIdx + 1],
     lrcData[currentIdx + 2],
   ];
-  container.innerHTML = rows.map((l, i) => {
-    if (!l) return '<p class="lyric-line empty-line"></p>';
-    return `<p class="lyric-line ${i === 2 ? "current" : "dimmed"}">${esc(l.text) || ""}</p>`;
-  }).join("");
+  container.innerHTML = rows
+    .map((l, i) => {
+      if (!l) return '<p class="lyric-line empty-line"></p>';
+      return `<p class="lyric-line ${i === 2 ? "current" : "dimmed"}">${esc(l.text) || ""}</p>`;
+    })
+    .join("");
 }
 
 function esc(s) {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
