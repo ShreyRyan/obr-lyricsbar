@@ -3,6 +3,7 @@ import { readFile, parseTextInput } from "./import.js";
 import { setState } from "./sync.js";
 
 const POPOVER_ID = "netease-lyrics-bar";
+const LYRICS_URL = import.meta.env.DEV ? "/lyrics-bar.html" : "/obr-lyricsbar/lyrics-bar.html";
 
 let selectedSong = null;
 let lrcData = [];
@@ -121,7 +122,7 @@ function bindEvents(root) {
       try {
         await OBR.popover.open({
           id: POPOVER_ID,
-          url: "/obr-lyricsbar/lyrics-bar.html",
+          url: LYRICS_URL,
           width: 600,
           height: 120,
           hidePaper: true,
