@@ -7,6 +7,7 @@ let currentState = { elapsed: 0, isPlaying: false, offset: 0, timestamp: 0 };
 let previewTimer = null;
 let latestOffset = 0;
 let isVisible = true;
+let lrcRaw = "";
 
 export function mountDM(root) {
   root.innerHTML = `
@@ -85,6 +86,7 @@ function bindEvents(root) {
       return;
     }
     lrcData = result.lrc;
+    lrcRaw = result.text;
     importStatus.classList.remove("error");
     importStatus.classList.add("success");
 
@@ -187,7 +189,6 @@ async function toggleVisibility() {
 }
 
 async function shiftOffset(delta, offsetInput) {
-  console.log("shiftOffset called:", delta, "current latestOffset:", latestOffset);
   latestOffset += delta;
   currentState.elapsed = computeElapsed();
   currentState.offset = latestOffset;
@@ -215,7 +216,7 @@ async function pushState() {
     songId: selectedSong?.name || "",
     songName: selectedSong?.name || "",
     artist: selectedSong?.artist || "",
-    lrc: lrcData,
+    lrcRaw: lrcRaw,
     elapsed: computeElapsed(),
     isPlaying: currentState.isPlaying,
     offset: latestOffset,
