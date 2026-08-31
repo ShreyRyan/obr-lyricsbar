@@ -12,8 +12,12 @@ export async function setState(state) {
 }
 
 export function onStateChange(callback) {
+  let last = Symbol();
   OBR.room.onMetadataChange((metadata) => {
     const state = metadata[NAMESPACE];
-    if (state) callback(state);
+    if (!Object.is(state, last)) {
+      last = state;
+      callback(state);
+    }
   });
 }
