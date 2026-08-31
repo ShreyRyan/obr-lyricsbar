@@ -2,60 +2,62 @@ import OBR from "@owlbear-rodeo/sdk";
 import { getState, onStateChange, setState } from "./sync.js";
 import { parseLRC } from "./lrc.js";
 
-const POS_NAMESPACE = "com.owlbear-netease-lyrics-pos";
+const LOCK_KEY = "netease-lyrics-locked";
 
 let state = null;
 let lrcParsed = [];
 let animFrame = null;
 let isPlaying = false;
-let dragStartX = 0, dragStartY = 0, isDragging = false;
+let localHidden = false;
+let isLocked = false;
+let userRole = null;
 
 OBR.onReady(async () => {
-  const role = await OBR.player.getRole();
-  if (role !== "GM") {
-    const row = document.getElementById("controls-row");
-    if (row) row.classList.add("hidden");
+  userRole = await OBR.player.getRole();
+  document.body.classList.add(userRole === "GM" ? "role-gm" : "role-pl");
+
+  if (userRole === "GM") {
+    bindControls();
+  } else {
+    document.getElementById("controls-row")?.classList.add("hidden");
+    document.getElementById("btn-local-viz")?.addEventListener("click", localToggle);
   }
+
+  isLocked = localStorage.getItem(LOCK_KEY) === "true";
+  if (isLocked) document.body.classList.add("lyrics-bar-locked");
+  updateLockBtn();
+
+  document.getElementById("btn-lock")?.addEventListener("click", toggleLock);
 
   const initial = await getState();
   handleState(initial);
   onStateChange(handleState);
-
-  bindDrag();
-  bindControls();
 });
 
-function bindDrag() {
+function localToggle() {
+  localHidden = !localHidden;
+  const btn = document.getElementById("btn-local-viz");
+  const row = document.querySelector(".lyrics-row");
+  if (btn) btn.textContent = localHidden ? "👁 显示" : "👁 隐藏";
+  if (row) row.style.display = localHidden ? "none" : "";
   const handle = document.getElementById("lyrics-bar-handle");
-  if (!handle) return;
-  handle.addEventListener("mousedown", (e) => { isDragging = true; dragStartX = e.clientX; dragStartY = e.clientY; document.body.style.cursor = "grabbing"; });
-  handle.addEventListener("touchstart", (e) => { isDragging = true; const t = e.touches[0]; dragStartX = t.clientX; dragStartY = t.clientY; document.body.style.cursor = "grabbing"; }, { passive: false });
-  window.addEventListener("mousemove", (e) => {
-    if (!isDragging) return;
-    const bar = document.getElementById("lyrics-bar");
-    if (bar) bar.style.transform = `translate(${e.clientX - dragStartX}px, ${e.clientY - dragStartY}px)`;
-  });
-  window.addEventListener("touchmove", (e) => {
-    if (!isDragging) return;
-    const t = e.touches[0];
-    const bar = document.getElementById("lyrics-bar");
-    if (bar) bar.style.transform = `translate(${t.clientX - dragStartX}px, ${t.clientY - dragStartY}px)`;
-  }, { passive: false });
-  window.addEventListener("mouseup", onDragEnd);
-  window.addEventListener("touchend", onDragEnd);
+  if (handle) handle.style.display = localHidden ? "none" : "";
 }
 
-async function onDragEnd(e) {
-  if (!isDragging) return;
-  isDragging = false; document.body.style.cursor = "";
-  const pt = e.changedTouches ? e.changedTouches[0] : e;
-  const bar = document.getElementById("lyrics-bar");
-  if (!bar) return;
-  bar.style.transform = "";
-  const rect = bar.getBoundingClientRect();
-  try {
-    await OBR.room.setMetadata({ [POS_NAMESPACE]: { x: Math.round(rect.left + rect.width / 2), y: Math.round(rect.top + rect.height / 2) } });
-  } catch {}
+function toggleLock() {
+  isLocked = !isLocked;
+  localStorage.setItem(LOCK_KEY, String(isLocked));
+  if (isLocked) {
+    document.body.classList.add("lyrics-bar-locked");
+  } else {
+    document.body.classList.remove("lyrics-bar-locked");
+  }
+  updateLockBtn();
+}
+
+function updateLockBtn() {
+  const btn = document.getElementById("btn-lock");
+  if (btn) btn.textContent = isLocked ? "🔒" : "🔓";
 }
 
 function bindControls() {
@@ -123,8 +125,6 @@ function handleState(newState) {
     document.querySelector(".lyrics-prev").textContent = "";
     document.querySelector(".lyrics-current").textContent = "等待 DM 开启歌词";
     document.querySelector(".lyrics-next").textContent = "";
-    document.querySelector(".progress-fill").style.width = "0%";
-    document.querySelector(".progress-time").textContent = "00:00 / 00:00";
     return;
   }
 
@@ -132,8 +132,7 @@ function handleState(newState) {
   lrcParsed = parseLRC(state.lrcRaw || "") || [];
   isPlaying = state.isPlaying;
 
-  updateControls(state);
-  updateProgress();
+  if (userRole === "GM") updateControls(state);
 
   if (state.isPlaying) {
     cancelAnimationFrame(animFrame);
@@ -154,7 +153,6 @@ function updateControls(s) {
 }
 
 function startLoop() {
-  let lastIndex = -1;
   function loop() {
     if (!state || !state.isPlaying) { isPlaying = false; return; }
     const sec = ((state.elapsed || 0) + (Date.now() - state.timestamp)) / 1000 + (state.offset || 0);
@@ -188,35 +186,36 @@ function renderLyrics(sec, currentIdx) {
   if (curr) {
     const lineDuration = next ? next.time - curr.time : 5;
     const lineElapsed = sec - curr.time;
-    const pct = Math.min(Math.max(lineElapsed / lineDuration, 0), 1) * 100;
+    const pct = Math.min(Math.max(lineElapsed / lineDuration, 0), 1);
 
-    currEl.textContent = curr.text;
-    currEl.style.background = `linear-gradient(to right, #f9a8d4 ${pct}%, #666 ${pct}%)`;
-    currEl.style.color = "transparent";
+    const chars = Array.from(curr.text);
+    const total = chars.length;
+    const idx = Math.floor(pct * total);
+    const rem = (pct * total) - idx;
+
+    currEl.innerHTML = chars.map((c, i) => {
+      let color;
+      if (i < idx) color = "#f9a8d4";
+      else if (i > idx) color = "#555";
+      else color = lerpColor("#555", "#f9a8d4", rem);
+      return `<span class="lyrics-char" style="color:${color}">${esc(c)}</span>`;
+    }).join("");
   } else {
-    currEl.textContent = "";
+    currEl.innerHTML = "";
   }
-
-  updateProgress();
 }
 
-function updateProgress() {
-  if (!state || !lrcParsed.length) return;
-  const total = lrcParsed[lrcParsed.length - 1]?.time || 0;
-  const sec = isPlaying
-    ? ((state.elapsed || 0) + (Date.now() - state.timestamp)) / 1000 + (state.offset || 0)
-    : (state.elapsed || 0) / 1000 + (state.offset || 0);
-  const pct = total > 0 ? Math.min(Math.max(sec / total, 0), 1) * 100 : 0;
-
-  const fill = document.querySelector(".progress-fill");
-  if (fill) fill.style.width = `${pct}%`;
-
-  const timeEl = document.querySelector(".progress-time");
-  if (timeEl) timeEl.textContent = `${fmt(sec)} / ${fmt(total)}`;
+function lerpColor(a, b, t) {
+  const ah = parseInt(a.slice(1), 16);
+  const bh = parseInt(b.slice(1), 16);
+  const r1 = (ah >> 16) & 0xff, g1 = (ah >> 8) & 0xff, b1 = ah & 0xff;
+  const r2 = (bh >> 16) & 0xff, g2 = (bh >> 8) & 0xff, b2 = bh & 0xff;
+  const r = Math.round(r1 + (r2 - r1) * t);
+  const g = Math.round(g1 + (g2 - g1) * t);
+  const bl = Math.round(b1 + (b2 - b1) * t);
+  return `#${((1 << 24) | (r << 16) | (g << 8) | bl).toString(16).slice(1)}`;
 }
 
-function fmt(sec) {
-  const m = Math.floor(Math.max(sec, 0) / 60);
-  const s = Math.floor(Math.max(sec, 0) % 60);
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+function esc(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }

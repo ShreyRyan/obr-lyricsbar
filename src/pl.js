@@ -2,8 +2,7 @@ import OBR from "@owlbear-rodeo/sdk";
 import { getState, onStateChange } from "./sync.js";
 
 const POPOVER_ID = "netease-lyrics-bar";
-const POS_NAMESPACE = "com.owlbear-netease-lyrics-pos";
-const LYRICS_URL = import.meta.env.DEV ? "/lyrics-bar.html" : LYRICS_URL;
+const LYRICS_URL = import.meta.env.DEV ? `${window.location.origin}/lyrics-bar.html` : "/obr-lyricsbar/lyrics-bar.html";
 
 export function mountPL(root) {
   root.innerHTML = `
@@ -14,12 +13,6 @@ export function mountPL(root) {
   `;
 
   let state = null;
-
-  OBR.room.onMetadataChange((metadata) => {
-    if (metadata[POS_NAMESPACE] && state) {
-      repositionLyricsBar(metadata[POS_NAMESPACE]);
-    }
-  });
 
   async function handleState(newState) {
     if (!newState || newState.visible === false) {
@@ -37,40 +30,8 @@ export function mountPL(root) {
 
   async function openLyricsBar() {
     try {
-      const metadata = await OBR.room.getMetadata();
-      const savedPos = metadata[POS_NAMESPACE];
+      const left = (screen.width - 600) / 2;
 
-      const base = {
-        id: POPOVER_ID,
-        url: LYRICS_URL,
-        width: 600,
-        height: 120,
-        hidePaper: true,
-        disableClickAway: true,
-        marginThreshold: 8,
-      };
-
-      if (savedPos && typeof savedPos.x === "number") {
-        await OBR.popover.open({
-          ...base,
-          anchorReference: "POSITION",
-          anchorPosition: { left: savedPos.x, top: savedPos.y },
-          anchorOrigin: { horizontal: "CENTER", vertical: "TOP" },
-          transformOrigin: { horizontal: "CENTER", vertical: "TOP" },
-        });
-      } else {
-        await OBR.popover.open({
-          ...base,
-          anchorOrigin: { horizontal: "CENTER", vertical: "BOTTOM" },
-          transformOrigin: { horizontal: "CENTER", vertical: "BOTTOM" },
-        });
-      }
-    } catch {}
-  }
-
-  async function repositionLyricsBar(pos) {
-    try { await OBR.popover.close(POPOVER_ID); } catch {}
-    try {
       await OBR.popover.open({
         id: POPOVER_ID,
         url: LYRICS_URL,
@@ -80,7 +41,7 @@ export function mountPL(root) {
         disableClickAway: true,
         marginThreshold: 8,
         anchorReference: "POSITION",
-        anchorPosition: { left: pos.x, top: pos.y },
+        anchorPosition: { left, top: 0 },
         anchorOrigin: { horizontal: "CENTER", vertical: "TOP" },
         transformOrigin: { horizontal: "CENTER", vertical: "TOP" },
       });
