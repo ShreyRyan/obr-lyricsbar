@@ -1,10 +1,7 @@
-import OBR from "@owlbear-rodeo/sdk";
+import { openLyricsBar, closeLyricsBar, esc } from "./shared.js";
 import { readFile, parseTextInput } from "./import.js";
 import { parseLRC } from "./lrc.js";
 import { getState, setState } from "./sync.js";
-
-const POPOVER_ID = "netease-lyrics-bar";
-const LYRICS_URL = import.meta.env.DEV ? `${window.location.origin}/lyrics-bar.html` : "/obr-lyricsbar/lyrics-bar.html";
 
 let selectedSong = null;
 let lrcData = [];
@@ -76,7 +73,7 @@ function bindEvents(root) {
     importStatus.innerHTML = `<span>✅ 已解析 ${lrcData.length} 句歌词 — ${esc(name)} / ${esc(artist)}</span>`;
 
     btnToggleLyrics.disabled = false;
-    renderPreview(0);
+    renderPreview();
   }
 
   const fileInput = document.createElement("input");
@@ -120,17 +117,17 @@ function bindEvents(root) {
         timestamp: Date.now(),
         visible: true,
       });
-      try { await openLyricsBarDM(); } catch {}
+      await openLyricsBar();
       btnToggleLyrics.textContent = "📢 关闭歌词";
     } else if (saved.visible === false) {
       // Hidden → re-show, preserve progress
       await setState({ ...saved, visible: true, timestamp: Date.now() });
-      try { await openLyricsBarDM(); } catch {}
+      await openLyricsBar();
       btnToggleLyrics.textContent = "📢 关闭歌词";
     } else {
       // Visible → hide (reversible, keeps progress)
       await setState({ ...saved, visible: false });
-      try { await OBR.popover.close(POPOVER_ID); } catch {}
+      await closeLyricsBar();
       btnToggleLyrics.textContent = "📢 开启歌词";
     }
   });
@@ -150,52 +147,25 @@ function bindEvents(root) {
     btnToggleLyrics.disabled = false;
     btnToggleLyrics.textContent = saved.visible ? "📢 关闭歌词" : "📢 开启歌词";
     if (saved.visible) {
-      try { await openLyricsBarDM(); } catch {}
+      await openLyricsBar();
     }
-    renderPreview(0);
+    renderPreview();
   })();
 }
 
-async function openLyricsBarDM() {
-  const left = Math.max((window.innerWidth - 600) / 2, 8);
-
-  await OBR.popover.open({
-    id: POPOVER_ID,
-    url: LYRICS_URL,
-    width: 600,
-    height: 120,
-    hidePaper: true,
-    disableClickAway: true,
-    anchorReference: "POSITION",
-    anchorPosition: { left, top: 0 },
-    anchorOrigin: { horizontal: "CENTER", vertical: "TOP" },
-    transformOrigin: { horizontal: "CENTER", vertical: "TOP" },
-    marginThreshold: 8,
-  });
-}
-
-function renderPreview(currentIdx) {
-const container = document.getElementById("lyrics-preview");
-if (!container) return;
-const rows = [
-  lrcData[currentIdx - 2],
-  lrcData[currentIdx - 1],
-  lrcData[currentIdx],
-  lrcData[currentIdx + 1],
-  lrcData[currentIdx + 2],
-];
-container.innerHTML = rows
-  .map((l, i) => {
+function renderPreview() {
+  const container = document.getElementById("lyrics-preview");
+  if (!container) return;
+  const currentIdx = 0;
+  const rows = [
+    lrcData[currentIdx - 2],
+    lrcData[currentIdx - 1],
+    lrcData[currentIdx],
+    lrcData[currentIdx + 1],
+    lrcData[currentIdx + 2],
+  ];
+  container.innerHTML = rows.map((l, i) => {
     if (!l) return '<p class="lyric-line empty-line"></p>';
     return `<p class="lyric-line ${i === 2 ? "current" : "dimmed"}">${esc(l.text) || ""}</p>`;
-  })
-  .join("");
-}
-
-function esc(s) {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+    }).join("");
 }

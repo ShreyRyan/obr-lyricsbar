@@ -1,5 +1,6 @@
 import OBR from "@owlbear-rodeo/sdk";
-import { getState, onStateChange, setState } from "./sync.js";
+import { getState, onStateChange, setState, liveElapsed } from "./sync.js";
+import { POPOVER_ID, BAR_HEIGHT, BAR_HEIGHT_GROUPED, esc } from "./shared.js";
 import { parseLRC } from "./lrc.js";
 
 const LOCK_KEY = "netease-lyrics-locked";
@@ -67,67 +68,46 @@ function bindControls() {
   document.getElementById("btn-offset-plus")?.addEventListener("click", () => shift(0.1));
 }
 
-async function play() {
-  if (!state) return;
-  clearTimeout(shiftTimer);
-  await setState({
-    songId: state.songId, songName: state.songName, artist: state.artist,
-    lrcRaw: state.lrcRaw, elapsed: state.elapsed || 0, isPlaying: true,
-    offset: offsetRef, timestamp: Date.now(), visible: state.visible !== false,
-  });
+function play(){
+  if (state) updateState({ isPlaying: true });
 }
 
-async function pause() {
-  if (!state) return;
-  clearTimeout(shiftTimer);
-  const elapsed = (state.elapsed || 0) + (state.isPlaying ? Date.now() - state.timestamp : 0);
-  await setState({
-    songId: state.songId, songName: state.songName, artist: state.artist,
-    lrcRaw: state.lrcRaw, elapsed, isPlaying: false,
-    offset: offsetRef, timestamp: Date.now(), visible: state.visible !== false,
-  });
+function pause(){
+  if (state) updateState({ isPlaying: false });
 }
 
-async function stop() {
-  if (!state) return;
-  clearTimeout(shiftTimer);
-  offsetRef = 0;
-  await setState({
-    songId: state.songId, songName: state.songName, artist: state.artist,
-    lrcRaw: state.lrcRaw, elapsed: 0, isPlaying: false,
-    offset: 0, timestamp: Date.now(), visible: true,
-  });
+function stop(){
+  if (!state) return; offsetRef = 0;
+  updateState({ elapsed: 0, isPlaying: false, offset: 0, visible: true });
 }
 
-async function toggleViz() {
-  if (!state) return;
-  clearTimeout(shiftTimer);
-  const newVis = state.visible === false;
-  await setState({
-    songId: state.songId, songName: state.songName, artist: state.artist,
-    lrcRaw: state.lrcRaw, elapsed: state.elapsed || 0, isPlaying: state.isPlaying || false,
-    offset: offsetRef, timestamp: Date.now(), visible: newVis,
-  });
+function toggleViz(){
+  if (state) updateState({ visible: state.visible === false });
 }
 
 let shiftTimer = null;
 
-async function shift(delta) {
+function shift(delta) {
   if (!state) return;
-  // Apply immediately to the local authoritative offset
   offsetRef += delta;
-
-  // Coalesce rapid clicks into a single trailing write
   clearTimeout(shiftTimer);
-  shiftTimer = setTimeout(async () => {
-    if (!state) return;
-    const elapsed = (state.elapsed || 0) + (state.isPlaying ? Date.now() - state.timestamp : 0);
-    await setState({
-      songId: state.songId, songName: state.songName, artist: state.artist,
-      lrcRaw: state.lrcRaw, elapsed, isPlaying: state.isPlaying || false,
-      offset: offsetRef, timestamp: Date.now(), visible: state.visible !== false,
-    });
-  }, 120);
+  shiftTimer = setTimeout(() => updateState({}), 120);
+}
+
+async function updateState(patch) {
+  if (!state) return;
+  clearTimeout(shiftTimer);
+  await setState({
+    songId: state.songId,
+    songName: state.songName,
+    artist: state.artist,
+    lrcRaw: state.lrcRaw,
+    elapsed: patch.elapsed !== undefined ? patch.elapsed : liveElapsed(state),
+    isPlaying: patch.isPlaying !== undefined ? patch.isPlaying : state.isPlaying,
+    offset: patch.offset !== undefined ? patch.offset : offsetRef,
+    timestamp: Date.now(),
+    visible: patch.visible !== undefined ? patch.visible : state.visible !== false,
+  });
 }
 
 function handleState(newState) {
@@ -224,9 +204,7 @@ function renderLyrics(sec, currentIdx) {
 
   // Flatten for continuous cross-line coloring
   let flat = [];
-  let lineOffsets = [];
   for (const seg of segments) {
-    lineOffsets.push(flat.length);
     flat.push(...seg);
   }
   const total = flat.length;
@@ -261,18 +239,18 @@ function renderLyrics(sec, currentIdx) {
   }
 
   // Dynamic height: taller when showing two lines
-  const target = segments.length > 1 ? 150 : 120;
+  const target = segments.length > 1 ? BAR_HEIGHT_GROUPED : BAR_HEIGHT;
   if (currEl.__h !== target) {
     currEl.__h = target;
-    try { OBR.popover.setHeight("netease-lyrics-bar", target); } catch {}
+    try { OBR.popover.setHeight(POPOVER_ID, target); } catch {}
   }
 }
 
 function resetHeight() {
   const el = document.querySelector(".lyrics-current");
-  if (el && el.__h !== 120) {
-    el.__h = 120;
-    try { OBR.popover.setHeight("netease-lyrics-bar", 120); } catch {}
+  if (el && el.__h !== BAR_HEIGHT) {
+    el.__h = BAR_HEIGHT;
+    try { OBR.popover.setHeight(POPOVER_ID, BAR_HEIGHT); } catch {}
   }
 }
 
@@ -285,8 +263,4 @@ function lerpColor(a, b, t) {
   const g = Math.round(g1 + (g2 - g1) * t);
   const bl = Math.round(b1 + (b2 - b1) * t);
   return `#${((1 << 24) | (r << 16) | (g << 8) | bl).toString(16).slice(1)}`;
-}
-
-function esc(s) {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
