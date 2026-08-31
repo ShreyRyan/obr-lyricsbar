@@ -21,3 +21,8 @@ export function onStateChange(callback) {
     }
   });
 }
+
+// 计算某个状态的实时播放位置（毫秒）
+export function liveElapsed(s) {
+  return (s.elapsed || 0) + (s.isPlaying ? Date.now() - s.timestamp : 0);
+}
