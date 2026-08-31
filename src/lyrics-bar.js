@@ -86,6 +86,20 @@ function toggleViz(){
 }
 
 let shiftTimer = null;
+let heartbeatTimer = null;
+
+function startHeartbeat() {
+  stopHeartbeat();
+  heartbeatTimer = setInterval(() => {
+    if (userRole !== "GM" || !state || !state.isPlaying) return;
+    updateState({});   // 复用统一入口：带最新 elapsed/offsetRef，走 N4 队列
+  }, 5000);
+}
+
+function stopHeartbeat() {
+  clearInterval(heartbeatTimer);
+  heartbeatTimer = null;
+}
 
 function shift(delta) {
   if (!state) return;
@@ -112,15 +126,7 @@ async function updateState(patch) {
   if (next.visible === false) {
     try { await OBR.popover.close(POPOVER_ID); } catch {}   // ② 隐藏就关条（本地先关，与网络无关）
   }
-  try {
-    await setState(next);
-  } catch (e) {
-    console.warn("歌词状态同步失败，请检查网络", e);
-    return;
-  }
-  if (next.visible === false) {
-    try { await OBR.popover.close(POPOVER_ID); } catch {}
-  }
+  await setState(next);
 }
 
 function handleState(newState) {
