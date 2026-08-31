@@ -131,6 +131,7 @@ async function updateState(patch) {
 
 function handleState(newState) {
   if (!newState) {
+    stopHeartbeat();
     state = null;
     lrcParsed = [];
     cancelAnimationFrame(animFrame);
@@ -152,6 +153,7 @@ function handleState(newState) {
   offsetRef = state.offset || 0;
 
   if (newState.visible === false) {
+    stopHeartbeat();
     cancelAnimationFrame(animFrame);
     document.querySelector(".lyrics-prev").textContent = "";
     document.querySelector(".lyrics-current").textContent = "";
@@ -164,10 +166,12 @@ function handleState(newState) {
 
   if (state.isPlaying) {
     cancelAnimationFrame(animFrame);
+    startHeartbeat();
     startLoop();
   } else {
     cancelAnimationFrame(animFrame);
     renderAt((state.elapsed || 0) / 1000 + offsetRef);
+    stopHeartbeat();
   }
 }
 
