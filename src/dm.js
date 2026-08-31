@@ -120,8 +120,14 @@ function bindEvents(root) {
       await openLyricsBar();
       btnToggleLyrics.textContent = "关闭歌词";
     } else {
-      // 同一首歌，正在显示 → 隐藏
-      await setState({ ...saved, visible: false });
+      // 正在显示 → 隐藏（= 暂停，进度冻结在隐藏时刻）
+      await setState({
+        ...saved,
+        elapsed: liveElapsed(saved),   // 记录隐藏瞬间的位置
+        isPlaying: false,              // 暂停
+        timestamp: Date.now(),
+        visible: false,
+      });
       await closeLyricsBar();
       btnToggleLyrics.textContent = "开启歌词";
     }
