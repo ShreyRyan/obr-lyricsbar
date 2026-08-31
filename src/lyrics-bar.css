@@ -18,14 +18,6 @@ html, body {
   background: rgba(15, 15, 35, 0.85);
 }
 
-.lyrics-bar-handle {
-  flex-shrink: 0; font-size: 16px; color: #f9a8d4;
-  cursor: grab; user-select: none; padding: 2px 0; line-height: 1;
-  opacity: 0.8; transition: opacity 0.3s; margin-top: 2px; margin-right: 6px;
-}
-#lyrics-bar:hover .lyrics-bar-handle { opacity: 0.8; }
-.lyrics-bar-handle:hover { opacity: 1; color: #f9a8d4; }
-
 .lyrics-content {
   flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0;
 }
@@ -76,12 +68,3 @@ html, body {
   z-index: 10;
 }
 .lyrics-bar-locked #lyrics-bar:hover #btn-lock { opacity: 1; pointer-events: auto; }
-
-/* Drag feedback */
-.is-dragging #lyrics-bar {
-  background: rgba(15, 15, 35, 0.85) !important;
-  box-shadow: inset 0 0 0 2px #ec4899;
-}
-.is-dragging .lyrics-bar-handle { opacity: 1; color: #f9a8d4; }
-.is-dragging .controls-row,
-.is-dragging .lyrics-local-viz { opacity: 1; }

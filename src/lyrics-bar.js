@@ -40,8 +40,6 @@ function localToggle() {
   const row = document.querySelector(".lyrics-row");
   if (btn) btn.textContent = localHidden ? "👁 显示" : "👁 隐藏";
   if (row) row.style.display = localHidden ? "none" : "";
-  const handle = document.getElementById("lyrics-bar-handle");
-  if (handle) handle.style.display = localHidden ? "none" : "";
 }
 
 function toggleLock() {
