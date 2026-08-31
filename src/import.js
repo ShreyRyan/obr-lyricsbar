@@ -9,7 +9,7 @@ export function readFile(file, callback) {
       callback({ error: "未检测到 LRC 时间戳 [mm:ss.xx]，请确认文件包含标准 LRC 歌词", text });
       return;
     }
-    callback({ lrc, text, filename: file.name, source: "file" });
+    callback({ lrc, text });
   };
   reader.onerror = () => {
     callback({ error: "文件读取失败" });
@@ -23,5 +23,5 @@ export function parseTextInput(text) {
   if (lrc.length === 0) {
     return { error: "未检测到 LRC 时间戳 [mm:ss.xx]，请确认内容包含标准 LRC 歌词", text };
   }
-  return { lrc, text, source: "paste" };
+  return { lrc, text };
 }

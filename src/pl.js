@@ -12,17 +12,13 @@ export function mountPL(root) {
     </div>
   `;
 
-  let state = null;
-
   async function handleState(newState) {
     if (!newState || newState.visible === false) {
-      state = newState;
       document.getElementById("pl-song-info").textContent = "等待 DM 选择歌曲...";
       document.getElementById("pl-lyrics").innerHTML = "";
       await closeLyricsBar();
       return;
     }
-    state = newState;
     document.getElementById("pl-song-info").textContent = `♬ ${newState.songName} — ${newState.artist}`;
     document.getElementById("pl-lyrics").innerHTML = '<p class="pl-lyric-line dimmed" style="padding-top:24px">歌词已浮动显示</p>';
     await openLyricsBar();
