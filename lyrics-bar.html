@@ -8,16 +8,14 @@
   </head>
   <body>
     <div id="lyrics-bar">
-      <div id="lyrics-bar-handle" class="lyrics-bar-handle" title="拖拽移动歌词">⋮⋮</div>
       <div class="lyrics-content">
         <div class="lyrics-row">
           <span class="lyrics-prev"></span>
           <span class="lyrics-current">等待 DM 开启歌词</span>
           <span class="lyrics-next"></span>
         </div>
-        <div class="progress-row">
-          <div class="progress-bar"><div class="progress-fill"></div></div>
-          <span class="progress-time">00:00 / 00:00</span>
+        <div class="lyrics-local-viz" id="pl-local-viz">
+          <button id="btn-local-viz" class="lyrics-btn">👁 隐藏</button>
         </div>
         <div class="controls-row" id="controls-row">
           <button id="btn-play" class="lyrics-btn primary">▶</button>
@@ -26,6 +24,7 @@
           <button id="btn-toggle-viz" class="lyrics-btn">👁 隐藏</button>
           <button id="btn-offset-minus" class="lyrics-btn">-0.1s</button>
           <button id="btn-offset-plus" class="lyrics-btn">+0.1s</button>
+          <button id="btn-lock" class="lyrics-btn" title="锁定后仅显示歌词文字，鼠标移入显示解锁按钮">🔓</button>
         </div>
       </div>
     </div>

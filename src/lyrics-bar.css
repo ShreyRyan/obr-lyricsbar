@@ -9,17 +9,22 @@ html, body {
   width: 100%; min-height: 100%;
   display: flex; align-items: flex-start;
   padding: 4px 12px; gap: 8px;
-  background: rgba(15, 15, 35, 0.85);
+  background: transparent;
   border-radius: 8px;
+  transition: background 0.3s;
+}
+
+#lyrics-bar:hover {
+  background: rgba(15, 15, 35, 0.85);
 }
 
 .lyrics-bar-handle {
-  flex-shrink: 0; font-size: 16px; color: #666;
+  flex-shrink: 0; font-size: 16px; color: #f9a8d4;
   cursor: grab; user-select: none; padding: 2px 0; line-height: 1;
-  opacity: 0.5; transition: opacity 0.2s; margin-top: 2px;
+  opacity: 0.8; transition: opacity 0.3s; margin-top: 2px; margin-right: 6px;
 }
+#lyrics-bar:hover .lyrics-bar-handle { opacity: 0.8; }
 .lyrics-bar-handle:hover { opacity: 1; color: #f9a8d4; }
-.lyrics-bar-handle:active { cursor: grabbing; }
 
 .lyrics-content {
   flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0;
@@ -31,23 +36,14 @@ html, body {
 .lyrics-prev, .lyrics-next { font-size: 12px; color: #555; text-align: center; }
 .lyrics-current {
   font-size: 16px; font-weight: 700; text-align: center;
-  -webkit-background-clip: text; background-clip: text;
 }
 
-.progress-row {
-  display: flex; align-items: center; gap: 8px;
+.controls-row {
+  display: flex; align-items: center; gap: 4px; justify-content: center;
+  opacity: 0; transition: opacity 0.3s;
 }
-.progress-bar {
-  flex: 1; height: 4px; background: #222; border-radius: 2px; overflow: hidden;
-}
-.progress-fill {
-  height: 100%; width: 0%; background: #ec4899;
-  border-radius: 2px; transition: width 0.15s linear;
-}
-.progress-time { font-size: 11px; color: #666; white-space: nowrap; }
-
-.controls-row { display: flex; align-items: center; gap: 4px; justify-content: center; }
 .controls-row.hidden { display: none !important; }
+#lyrics-bar:hover .controls-row { opacity: 1; }
 
 .lyrics-btn {
   padding: 2px 6px; border: none; border-radius: 4px;
@@ -57,3 +53,35 @@ html, body {
 .lyrics-btn:hover { background: #444; }
 .lyrics-btn.primary { background: #ec4899; color: #fff; }
 .lyrics-btn.danger { background: #ef4444; color: #fff; }
+
+.lyrics-local-viz {
+  display: none; justify-content: center; margin-top: 2px;
+  opacity: 0; transition: opacity 0.3s;
+}
+.role-pl .lyrics-local-viz { display: flex; }
+#lyrics-bar:hover .lyrics-local-viz { opacity: 1; }
+.role-pl #lyrics-bar { background: transparent; }
+.role-pl #lyrics-bar:hover { background: transparent; }
+
+/* Locked mode */
+.lyrics-bar-locked #lyrics-bar { background: transparent !important; }
+.lyrics-bar-locked #lyrics-bar:hover { background: transparent !important; }
+.lyrics-bar-locked .lyrics-bar-handle,
+.lyrics-bar-locked .controls-row,
+.lyrics-bar-locked .lyrics-local-viz { opacity: 0 !important; }
+.lyrics-bar-locked .controls-row { pointer-events: none; }
+.lyrics-bar-locked #btn-lock {
+  position: fixed; right: 8px; top: 50%; transform: translateY(-50%);
+  opacity: 0; pointer-events: none; transition: opacity 0.3s;
+  z-index: 10;
+}
+.lyrics-bar-locked #lyrics-bar:hover #btn-lock { opacity: 1; pointer-events: auto; }
+
+/* Drag feedback */
+.is-dragging #lyrics-bar {
+  background: rgba(15, 15, 35, 0.85) !important;
+  box-shadow: inset 0 0 0 2px #ec4899;
+}
+.is-dragging .lyrics-bar-handle { opacity: 1; color: #f9a8d4; }
+.is-dragging .controls-row,
+.is-dragging .lyrics-local-viz { opacity: 1; }

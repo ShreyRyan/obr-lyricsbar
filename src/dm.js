@@ -3,7 +3,7 @@ import { readFile, parseTextInput } from "./import.js";
 import { setState } from "./sync.js";
 
 const POPOVER_ID = "netease-lyrics-bar";
-const LYRICS_URL = import.meta.env.DEV ? "/lyrics-bar.html" : "/obr-lyricsbar/lyrics-bar.html";
+const LYRICS_URL = import.meta.env.DEV ? `${window.location.origin}/lyrics-bar.html` : "/obr-lyricsbar/lyrics-bar.html";
 
 let selectedSong = null;
 let lrcData = [];
@@ -120,17 +120,7 @@ function bindEvents(root) {
       });
 
       try {
-        await OBR.popover.open({
-          id: POPOVER_ID,
-          url: LYRICS_URL,
-          width: 600,
-          height: 120,
-          hidePaper: true,
-          disableClickAway: true,
-          anchorOrigin: { horizontal: "CENTER", vertical: "BOTTOM" },
-          transformOrigin: { horizontal: "CENTER", vertical: "BOTTOM" },
-          marginThreshold: 8,
-        });
+        await openLyricsBarDM();
       } catch {}
 
       lyricsActive = true;
@@ -144,7 +134,25 @@ function bindEvents(root) {
   });
 }
 
-function renderPreview(currentIdx) {
+  async function openLyricsBarDM() {
+    const left = (screen.width - 600) / 2;
+
+    await OBR.popover.open({
+      id: POPOVER_ID,
+      url: LYRICS_URL,
+      width: 600,
+      height: 120,
+      hidePaper: true,
+      disableClickAway: true,
+      anchorReference: "POSITION",
+      anchorPosition: { left, top: 0 },
+      anchorOrigin: { horizontal: "CENTER", vertical: "TOP" },
+      transformOrigin: { horizontal: "CENTER", vertical: "TOP" },
+      marginThreshold: 8,
+    });
+  }
+
+  function renderPreview(currentIdx) {
   const container = document.getElementById("lyrics-preview");
   if (!container) return;
   const rows = [
