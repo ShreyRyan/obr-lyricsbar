@@ -1,7 +1,7 @@
 import { openLyricsBar, closeLyricsBar, esc } from "./shared.js";
 import { readFile, parseTextInput } from "./import.js";
 import { parseLRC } from "./lrc.js";
-import { getState, setState } from "./sync.js";
+import {getState, liveElapsed, setState} from "./sync.js";
 
 let selectedSong = null;
 let lrcData = [];
@@ -32,7 +32,7 @@ export function mountDM(root) {
       </div>
 
       <div class="controls">
-        <button id="btn-toggle-lyrics" disabled>📢 开启歌词</button>
+        <button id="btn-toggle-lyrics" disabled>开启歌词</button>
       </div>
 
       <div class="lyrics-preview" id="lyrics-preview">
@@ -104,31 +104,26 @@ function bindEvents(root) {
 
   btnToggleLyrics.addEventListener("click", async () => {
     const saved = await getState();
-    if (!saved) {
-      // No active state → start fresh
+    if (!saved || saved.lrcRaw !== lrcRaw) {
+      // 无状态，或导入了不同的歌词 → 开新歌（进度归零）
+      const name = songNameInput.value.trim() || selectedSong?.name || "未知歌曲";
+      const artist = songArtistInput.value.trim() || selectedSong?.artist || "未知歌手";
       await setState({
-        songId: selectedSong.name,
-        songName: selectedSong.name,
-        artist: selectedSong.artist,
-        lrcRaw,
-        elapsed: 0,
-        isPlaying: false,
-        offset: 0,
-        timestamp: Date.now(),
-        visible: true,
+        songId: name, songName: name, artist,
+        lrcRaw, elapsed: 0, isPlaying: false, offset: 0, timestamp: Date.now(), visible: true,
       });
       await openLyricsBar();
-      btnToggleLyrics.textContent = "📢 关闭歌词";
+      btnToggleLyrics.textContent = "关闭歌词";
     } else if (saved.visible === false) {
-      // Hidden → re-show, preserve progress
-      await setState({ ...saved, visible: true, timestamp: Date.now() });
+      // 同一首歌，之前隐藏了 → 恢复显示（保留进度）
+      await setState({ ...saved, elapsed: liveElapsed(saved), visible: true, timestamp: Date.now() });
       await openLyricsBar();
-      btnToggleLyrics.textContent = "📢 关闭歌词";
+      btnToggleLyrics.textContent = "关闭歌词";
     } else {
-      // Visible → hide (reversible, keeps progress)
+      // 同一首歌，正在显示 → 隐藏
       await setState({ ...saved, visible: false });
       await closeLyricsBar();
-      btnToggleLyrics.textContent = "📢 开启歌词";
+      btnToggleLyrics.textContent = "开启歌词";
     }
   });
 
@@ -145,7 +140,7 @@ function bindEvents(root) {
     importStatus.classList.add("success");
     importStatus.innerHTML = `✅ 已解析 ${lrcData.length} 句歌词 — ${esc(selectedSong.name)} / ${esc(selectedSong.artist)}`;
     btnToggleLyrics.disabled = false;
-    btnToggleLyrics.textContent = saved.visible ? "📢 关闭歌词" : "📢 开启歌词";
+    btnToggleLyrics.textContent = saved.visible ? "关闭歌词" : "开启歌词";
     if (saved.visible) {
       await openLyricsBar();
     }
