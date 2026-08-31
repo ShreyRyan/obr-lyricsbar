@@ -97,7 +97,7 @@ function shift(delta) {
 async function updateState(patch) {
   if (!state) return;
   clearTimeout(shiftTimer);
-  await setState({
+  const next = {
     songId: state.songId,
     songName: state.songName,
     artist: state.artist,
@@ -107,7 +107,16 @@ async function updateState(patch) {
     offset: patch.offset !== undefined ? patch.offset : offsetRef,
     timestamp: Date.now(),
     visible: patch.visible !== undefined ? patch.visible : state.visible !== false,
-  });
+  };
+  try {
+    await setState(next);
+  } catch (e) {
+    console.warn("歌词状态同步失败，请检查网络", e);
+    return;
+  }
+  if (next.visible === false) {
+    try { await OBR.popover.close(POPOVER_ID); } catch {}
+  }
 }
 
 function handleState(newState) {
@@ -128,9 +137,8 @@ function handleState(newState) {
   if (newState.visible === false) {
     cancelAnimationFrame(animFrame);
     document.querySelector(".lyrics-prev").textContent = "";
-    document.querySelector(".lyrics-current").textContent = "歌词已隐藏";
+    document.querySelector(".lyrics-current").textContent = "";
     document.querySelector(".lyrics-next").textContent = "";
-    if (userRole === "GM") updateControls(state);
     resetHeight();
     return;
   }

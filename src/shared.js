@@ -12,7 +12,7 @@ export const BAR_HEIGHT = 120;
 export const BAR_HEIGHT_GROUPED = 150; // 双语两行时的高度
 
 export function computeBarLeft() {
-    return Math.max((window.innerWidth - BAR_WIDTH) / 2, 8);
+    return screen.width / 2;   // 原来用的是 window.innerWidth
 }
 
 // 打开歌词条（吞掉错误，与现行为一致）
