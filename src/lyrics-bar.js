@@ -108,6 +108,10 @@ async function updateState(patch) {
     timestamp: Date.now(),
     visible: patch.visible !== undefined ? patch.visible : state.visible !== false,
   };
+  handleState(next);                 // ① 本地先行：立即渲染/启停循环
+  if (next.visible === false) {
+    try { await OBR.popover.close(POPOVER_ID); } catch {}   // ② 隐藏就关条（本地先关，与网络无关）
+  }
   try {
     await setState(next);
   } catch (e) {
@@ -121,13 +125,20 @@ async function updateState(patch) {
 
 function handleState(newState) {
   if (!newState) {
-    state = null; lrcParsed = [];
+    state = null;
+    lrcParsed = [];
     cancelAnimationFrame(animFrame);
     document.querySelector(".lyrics-prev").textContent = "";
     document.querySelector(".lyrics-current").textContent = "等待 DM 开启歌词";
     document.querySelector(".lyrics-next").textContent = "";
     resetHeight();
     return;
+  }
+
+  if (state && state.isPlaying) {
+    const localPos = liveElapsed(state);
+    const remotePos = liveElapsed(newState);
+    if (remotePos < localPos - 700) return;
   }
 
   state = newState;
