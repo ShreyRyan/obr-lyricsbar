@@ -70,25 +70,29 @@ function bindControls() {
 
 async function play() {
   if (!state) return;
+  clearTimeout(shiftTimer);
   await setState({
     songId: state.songId, songName: state.songName, artist: state.artist,
     lrcRaw: state.lrcRaw, elapsed: state.elapsed || 0, isPlaying: true,
-    offset: state.offset || 0, timestamp: Date.now(), visible: state.visible !== false,
+    offset: offsetRef, timestamp: Date.now(), visible: state.visible !== false,
   });
 }
 
 async function pause() {
   if (!state) return;
+  clearTimeout(shiftTimer);
   const elapsed = (state.elapsed || 0) + (state.isPlaying ? Date.now() - state.timestamp : 0);
   await setState({
     songId: state.songId, songName: state.songName, artist: state.artist,
     lrcRaw: state.lrcRaw, elapsed, isPlaying: false,
-    offset: state.offset || 0, timestamp: Date.now(), visible: state.visible !== false,
+    offset: offsetRef, timestamp: Date.now(), visible: state.visible !== false,
   });
 }
 
 async function stop() {
   if (!state) return;
+  clearTimeout(shiftTimer);
+  offsetRef = 0;
   await setState({
     songId: state.songId, songName: state.songName, artist: state.artist,
     lrcRaw: state.lrcRaw, elapsed: 0, isPlaying: false,
@@ -98,11 +102,12 @@ async function stop() {
 
 async function toggleViz() {
   if (!state) return;
+  clearTimeout(shiftTimer);
   const newVis = state.visible === false;
   await setState({
     songId: state.songId, songName: state.songName, artist: state.artist,
     lrcRaw: state.lrcRaw, elapsed: state.elapsed || 0, isPlaying: state.isPlaying || false,
-    offset: state.offset || 0, timestamp: Date.now(), visible: newVis,
+    offset: offsetRef, timestamp: Date.now(), visible: newVis,
   });
 }
 
@@ -146,6 +151,7 @@ function handleState(newState) {
     document.querySelector(".lyrics-prev").textContent = "";
     document.querySelector(".lyrics-current").textContent = "歌词已隐藏";
     document.querySelector(".lyrics-next").textContent = "";
+    if (userRole === "GM") updateControls(state);
     return;
   }
 
