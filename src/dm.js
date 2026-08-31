@@ -3,7 +3,6 @@ import { readFile, parseTextInput } from "./import.js";
 import { parseLRC } from "./lrc.js";
 import {getState, liveElapsed, setState} from "./sync.js";
 
-let selectedSong = null;
 let lrcData = [];
 let lrcRaw = "";
 
@@ -11,11 +10,6 @@ export function mountDM(root) {
   root.innerHTML = `
     <div class="dm-panel">
       <h2>🎵 歌词同步</h2>
-
-      <div class="song-info-inputs">
-        <input type="text" id="song-name" placeholder="歌曲名（选填，PL 端显示用）" />
-        <input type="text" id="song-artist" placeholder="歌手名（选填，PL 端显示用）" />
-      </div>
 
       <div id="import-status" class="import-status empty">
         <span>未导入歌词</span>
@@ -52,9 +46,6 @@ function bindEvents(root) {
   const fileNameDisplay = root.querySelector("#file-name");
   const btnToggleLyrics = root.querySelector("#btn-toggle-lyrics");
 
-  const songNameInput = root.querySelector("#song-name");
-  const songArtistInput = root.querySelector("#song-artist");
-
   function onImportResult(result) {
     if (result.error) {
       importStatus.classList.add("error");
@@ -67,10 +58,7 @@ function bindEvents(root) {
     importStatus.classList.remove("error");
     importStatus.classList.add("success");
 
-    const name = songNameInput.value.trim() || "未知歌曲";
-    const artist = songArtistInput.value.trim() || "未知歌手";
-    selectedSong = { name, artist };
-    importStatus.innerHTML = `<span>✅ 已解析 ${lrcData.length} 句歌词 — ${esc(name)} / ${esc(artist)}</span>`;
+    importStatus.innerHTML = `<span>已解析 ${lrcData.length} 句歌词 — ${esc(name)} / ${esc(artist)}</span>`;
 
     btnToggleLyrics.disabled = false;
     renderPreview();
@@ -106,10 +94,7 @@ function bindEvents(root) {
     const saved = await getState();
     if (!saved || saved.lrcRaw !== lrcRaw) {
       // 无状态，或导入了不同的歌词 → 开新歌（进度归零）
-      const name = songNameInput.value.trim() || selectedSong?.name || "未知歌曲";
-      const artist = songArtistInput.value.trim() || selectedSong?.artist || "未知歌手";
       await setState({
-        songId: name, songName: name, artist,
         lrcRaw, elapsed: 0, isPlaying: false, offset: 0, timestamp: Date.now(), visible: true,
       });
       await openLyricsBar();
@@ -139,12 +124,9 @@ function bindEvents(root) {
     if (!saved) return;
     lrcRaw = saved.lrcRaw || "";
     lrcData = parseLRC(lrcRaw);
-    selectedSong = { name: saved.songName || "未知歌曲", artist: saved.artist || "未知歌手" };
-    songNameInput.value = saved.songName || "";
-    songArtistInput.value = saved.artist || "";
     importStatus.classList.remove("empty");
     importStatus.classList.add("success");
-    importStatus.innerHTML = `✅ 已解析 ${lrcData.length} 句歌词 — ${esc(selectedSong.name)} / ${esc(selectedSong.artist)}`;
+    importStatus.innerHTML = `✅ 已解析 ${lrcData.length} 句歌词`;
     btnToggleLyrics.disabled = false;
     btnToggleLyrics.textContent = saved.visible ? "关闭歌词" : "开启歌词";
     if (saved.visible) {

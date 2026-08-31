@@ -112,9 +112,6 @@ async function updateState(patch) {
   if (!state) return;
   clearTimeout(shiftTimer);
   const next = {
-    songId: state.songId,
-    songName: state.songName,
-    artist: state.artist,
     lrcRaw: state.lrcRaw,
     elapsed: patch.elapsed !== undefined ? patch.elapsed : liveElapsed(state),
     isPlaying: patch.isPlaying !== undefined ? patch.isPlaying : state.isPlaying,
