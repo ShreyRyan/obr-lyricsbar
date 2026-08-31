@@ -1,6 +1,7 @@
 import OBR from "@owlbear-rodeo/sdk";
 import { readFile, parseTextInput } from "./import.js";
-import { setState } from "./sync.js";
+import { parseLRC } from "./lrc.js";
+import { getState, setState } from "./sync.js";
 
 const POPOVER_ID = "netease-lyrics-bar";
 const LYRICS_URL = import.meta.env.DEV ? `${window.location.origin}/lyrics-bar.html` : "/obr-lyricsbar/lyrics-bar.html";
@@ -8,7 +9,6 @@ const LYRICS_URL = import.meta.env.DEV ? `${window.location.origin}/lyrics-bar.h
 let selectedSong = null;
 let lrcData = [];
 let lrcRaw = "";
-let lyricsActive = false;
 
 export function mountDM(root) {
   root.innerHTML = `
@@ -106,7 +106,9 @@ function bindEvents(root) {
   btnParsePaste.disabled = true;
 
   btnToggleLyrics.addEventListener("click", async () => {
-    if (!lyricsActive) {
+    const saved = await getState();
+    if (!saved) {
+      // No active state → start fresh
       await setState({
         songId: selectedSong.name,
         songName: selectedSong.name,
@@ -118,20 +120,40 @@ function bindEvents(root) {
         timestamp: Date.now(),
         visible: true,
       });
-
-      try {
-        await openLyricsBarDM();
-      } catch {}
-
-      lyricsActive = true;
+      try { await openLyricsBarDM(); } catch {}
+      btnToggleLyrics.textContent = "📢 关闭歌词";
+    } else if (saved.visible === false) {
+      // Hidden → re-show, preserve progress
+      await setState({ ...saved, visible: true, timestamp: Date.now() });
+      try { await openLyricsBarDM(); } catch {}
       btnToggleLyrics.textContent = "📢 关闭歌词";
     } else {
-      await setState(null);
+      // Visible → hide (reversible, keeps progress)
+      await setState({ ...saved, visible: false });
       try { await OBR.popover.close(POPOVER_ID); } catch {}
-      lyricsActive = false;
       btnToggleLyrics.textContent = "📢 开启歌词";
     }
   });
+
+  // Restore control after panel reload / page refresh
+  (async () => {
+    const saved = await getState();
+    if (!saved) return;
+    lrcRaw = saved.lrcRaw || "";
+    lrcData = parseLRC(lrcRaw);
+    selectedSong = { name: saved.songName || "未知歌曲", artist: saved.artist || "未知歌手" };
+    songNameInput.value = saved.songName || "";
+    songArtistInput.value = saved.artist || "";
+    importStatus.classList.remove("empty");
+    importStatus.classList.add("success");
+    importStatus.innerHTML = `✅ 已解析 ${lrcData.length} 句歌词 — ${esc(selectedSong.name)} / ${esc(selectedSong.artist)}`;
+    btnToggleLyrics.disabled = false;
+    btnToggleLyrics.textContent = saved.visible ? "📢 关闭歌词" : "📢 开启歌词";
+    if (saved.visible) {
+      try { await openLyricsBarDM(); } catch {}
+    }
+    renderPreview(0);
+  })();
 }
 
   async function openLyricsBarDM() {
