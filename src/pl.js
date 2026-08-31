@@ -30,7 +30,7 @@ export function mountPL(root) {
 
   async function openLyricsBar() {
     try {
-      const left = (screen.width - 600) / 2;
+      const left = Math.max((window.innerWidth - 600) / 2, 8);
 
       await OBR.popover.open({
         id: POPOVER_ID,
