@@ -7,7 +7,6 @@ const LOCK_KEY = "netease-lyrics-locked";
 let state = null;
 let lrcParsed = [];
 let animFrame = null;
-let isPlaying = false;
 let localHidden = false;
 let isLocked = false;
 let userRole = null;
@@ -144,7 +143,6 @@ function handleState(newState) {
 
   state = newState;
   lrcParsed = parseLRC(state.lrcRaw || "") || [];
-  isPlaying = state.isPlaying;
   offsetRef = state.offset || 0;
 
   if (newState.visible === false) {
@@ -179,7 +177,6 @@ function updateControls(s) {
 
 function startLoop() {
   function loop() {
-    if (!state || !state.isPlaying) { isPlaying = false; return; }
     const sec = ((state.elapsed || 0) + (Date.now() - state.timestamp)) / 1000 + offsetRef;
     let idx = lrcParsed.findIndex((l) => l.time > sec);
     if (idx === -1) idx = lrcParsed.length;

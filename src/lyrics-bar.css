@@ -62,7 +62,6 @@ html, body {
 /* Locked mode */
 .lyrics-bar-locked #lyrics-bar { background: transparent !important; }
 .lyrics-bar-locked #lyrics-bar:hover { background: transparent !important; }
-.lyrics-bar-locked .lyrics-bar-handle,
 .lyrics-bar-locked .controls-row,
 .lyrics-bar-locked .lyrics-local-viz { opacity: 0 !important; }
 .lyrics-bar-locked .controls-row { pointer-events: none; }

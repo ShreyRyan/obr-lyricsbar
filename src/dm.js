@@ -156,40 +156,40 @@ function bindEvents(root) {
   })();
 }
 
-  async function openLyricsBarDM() {
-    const left = Math.max((window.innerWidth - 600) / 2, 8);
+async function openLyricsBarDM() {
+  const left = Math.max((window.innerWidth - 600) / 2, 8);
 
-    await OBR.popover.open({
-      id: POPOVER_ID,
-      url: LYRICS_URL,
-      width: 600,
-      height: 120,
-      hidePaper: true,
-      disableClickAway: true,
-      anchorReference: "POSITION",
-      anchorPosition: { left, top: 0 },
-      anchorOrigin: { horizontal: "CENTER", vertical: "TOP" },
-      transformOrigin: { horizontal: "CENTER", vertical: "TOP" },
-      marginThreshold: 8,
-    });
-  }
+  await OBR.popover.open({
+    id: POPOVER_ID,
+    url: LYRICS_URL,
+    width: 600,
+    height: 120,
+    hidePaper: true,
+    disableClickAway: true,
+    anchorReference: "POSITION",
+    anchorPosition: { left, top: 0 },
+    anchorOrigin: { horizontal: "CENTER", vertical: "TOP" },
+    transformOrigin: { horizontal: "CENTER", vertical: "TOP" },
+    marginThreshold: 8,
+  });
+}
 
-  function renderPreview(currentIdx) {
-  const container = document.getElementById("lyrics-preview");
-  if (!container) return;
-  const rows = [
-    lrcData[currentIdx - 2],
-    lrcData[currentIdx - 1],
-    lrcData[currentIdx],
-    lrcData[currentIdx + 1],
-    lrcData[currentIdx + 2],
-  ];
-  container.innerHTML = rows
-    .map((l, i) => {
-      if (!l) return '<p class="lyric-line empty-line"></p>';
-      return `<p class="lyric-line ${i === 2 ? "current" : "dimmed"}">${esc(l.text) || ""}</p>`;
-    })
-    .join("");
+function renderPreview(currentIdx) {
+const container = document.getElementById("lyrics-preview");
+if (!container) return;
+const rows = [
+  lrcData[currentIdx - 2],
+  lrcData[currentIdx - 1],
+  lrcData[currentIdx],
+  lrcData[currentIdx + 1],
+  lrcData[currentIdx + 2],
+];
+container.innerHTML = rows
+  .map((l, i) => {
+    if (!l) return '<p class="lyric-line empty-line"></p>';
+    return `<p class="lyric-line ${i === 2 ? "current" : "dimmed"}">${esc(l.text) || ""}</p>`;
+  })
+  .join("");
 }
 
 function esc(s) {
