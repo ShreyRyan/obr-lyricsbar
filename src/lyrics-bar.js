@@ -138,6 +138,7 @@ function handleState(newState) {
     document.querySelector(".lyrics-prev").textContent = "";
     document.querySelector(".lyrics-current").textContent = "等待 DM 开启歌词";
     document.querySelector(".lyrics-next").textContent = "";
+    resetHeight();
     return;
   }
 
@@ -152,6 +153,7 @@ function handleState(newState) {
     document.querySelector(".lyrics-current").textContent = "歌词已隐藏";
     document.querySelector(".lyrics-next").textContent = "";
     if (userRole === "GM") updateControls(state);
+    resetHeight();
     return;
   }
 
@@ -199,37 +201,81 @@ function renderLyrics(sec, currentIdx) {
   const nextEl = document.querySelector(".lyrics-next");
   if (!currEl) return;
 
-  const prev = lrcParsed[currentIdx - 2];
-  const curr = lrcParsed[currentIdx - 1];
-  const next = lrcParsed[currentIdx];
-
-  if (prevEl) prevEl.textContent = prev ? prev.text : "";
-  if (nextEl) nextEl.textContent = next ? next.text : "";
-
-  if (!curr) {
+  // Determine the active group: all entries sharing the same timestamp
+  const activeTime = lrcParsed[currentIdx - 1]?.time;
+  if (activeTime === undefined) {
+    if (prevEl) prevEl.textContent = "";
+    if (nextEl) nextEl.textContent = "";
     currEl.innerHTML = "";
     return;
   }
 
-  const chars = Array.from(curr.text);
-  if (currEl.dataset.line !== curr.text) {
-    currEl.dataset.line = curr.text;
-    currEl.innerHTML = chars.map((c) =>
-      `<span class="lyrics-char">${esc(c)}</span>`
-    ).join("");
+  let gs = currentIdx - 1;
+  while (gs > 0 && lrcParsed[gs - 1].time === activeTime) gs--;
+  let ge = currentIdx - 1;
+  while (ge + 1 < lrcParsed.length && lrcParsed[ge + 1].time === activeTime) ge++;
+
+  const group = lrcParsed.slice(gs, ge + 1);
+  const prev = lrcParsed[gs - 1];
+  const next = lrcParsed[ge + 1];  // time > activeTime (or undefined)
+
+  if (prevEl) prevEl.textContent = prev ? prev.text : "";
+  if (nextEl) nextEl.textContent = next ? next.text : "";
+
+  // Split group into per-line char segments (e.g. zh line + en line)
+  const segments = group.map((e) => Array.from(e.text || ""));
+
+  // Flatten for continuous cross-line coloring
+  let flat = [];
+  let lineOffsets = [];
+  for (const seg of segments) {
+    lineOffsets.push(flat.length);
+    flat.push(...seg);
+  }
+  const total = flat.length;
+
+  // Rebuild DOM only when the active group changes
+  const key = segments.map((s) => s.join("")).join("\n");
+  if (currEl.dataset.line !== key) {
+    currEl.dataset.line = key;
+    currEl.innerHTML = segments
+      .map(
+        (seg) =>
+          `<span class="lyrics-current-line">${seg
+            .map((c) => `<span class="lyrics-char">${esc(c)}</span>`)
+            .join("")}</span>`
+      )
+      .join("");
   }
 
-  const lineDuration = next ? next.time - curr.time : 5;
-  const lineElapsed = sec - curr.time;
+  // Duration to the next DISTINCT time (always > 0)
+  const lineDuration = next ? next.time - activeTime : 5;
+  const lineElapsed = sec - activeTime;
   const pct = Math.min(Math.max(lineElapsed / lineDuration, 0), 1);
-  const idx = Math.floor(pct * chars.length);
-  const rem = (pct * chars.length) - idx;
+  const idx = Math.floor(pct * total);
+  const rem = (pct * total) - idx;
 
-  const spans = currEl.children;
-  for (let i = 0; i < spans.length; i++) {
-    if (i < idx) spans[i].style.color = "#f9a8d4";
-    else if (i > idx) spans[i].style.color = "#555";
-    else spans[i].style.color = lerpColor("#555", "#f9a8d4", rem);
+  // Color every char span in flat order (continuous across lines)
+  const allSpans = currEl.querySelectorAll(".lyrics-char");
+  for (let i = 0; i < allSpans.length; i++) {
+    if (i < idx) allSpans[i].style.color = "#f9a8d4";
+    else if (i > idx) allSpans[i].style.color = "#555";
+    else allSpans[i].style.color = lerpColor("#555", "#f9a8d4", rem);
+  }
+
+  // Dynamic height: taller when showing two lines
+  const target = segments.length > 1 ? 150 : 120;
+  if (currEl.__h !== target) {
+    currEl.__h = target;
+    try { OBR.popover.setHeight("netease-lyrics-bar", target); } catch {}
+  }
+}
+
+function resetHeight() {
+  const el = document.querySelector(".lyrics-current");
+  if (el && el.__h !== 120) {
+    el.__h = 120;
+    try { OBR.popover.setHeight("netease-lyrics-bar", 120); } catch {}
   }
 }
 
