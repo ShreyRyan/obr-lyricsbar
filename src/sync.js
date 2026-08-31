@@ -9,17 +9,11 @@ export async function getState() {
 
 export async function setState(state) {
   await OBR.room.setMetadata({ [NAMESPACE]: state });
-  OBR.broadcast.sendMessage(`${NAMESPACE}/sync`, {}, { destination: "ALL" });
 }
 
 export function onStateChange(callback) {
   OBR.room.onMetadataChange((metadata) => {
     const state = metadata[NAMESPACE];
-    if (state) callback(state);
-  });
-
-  OBR.broadcast.onMessage(`${NAMESPACE}/sync`, async () => {
-    const state = await getState();
     if (state) callback(state);
   });
 }

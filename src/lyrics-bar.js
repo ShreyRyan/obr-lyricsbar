@@ -181,25 +181,30 @@ function renderLyrics(sec, currentIdx) {
   if (prevEl) prevEl.textContent = prev ? prev.text : "";
   if (nextEl) nextEl.textContent = next ? next.text : "";
 
-  if (curr) {
-    const lineDuration = next ? next.time - curr.time : 5;
-    const lineElapsed = sec - curr.time;
-    const pct = Math.min(Math.max(lineElapsed / lineDuration, 0), 1);
-
-    const chars = Array.from(curr.text);
-    const total = chars.length;
-    const idx = Math.floor(pct * total);
-    const rem = (pct * total) - idx;
-
-    currEl.innerHTML = chars.map((c, i) => {
-      let color;
-      if (i < idx) color = "#f9a8d4";
-      else if (i > idx) color = "#555";
-      else color = lerpColor("#555", "#f9a8d4", rem);
-      return `<span class="lyrics-char" style="color:${color}">${esc(c)}</span>`;
-    }).join("");
-  } else {
+  if (!curr) {
     currEl.innerHTML = "";
+    return;
+  }
+
+  const chars = Array.from(curr.text);
+  if (currEl.dataset.line !== curr.text) {
+    currEl.dataset.line = curr.text;
+    currEl.innerHTML = chars.map((c) =>
+      `<span class="lyrics-char">${esc(c)}</span>`
+    ).join("");
+  }
+
+  const lineDuration = next ? next.time - curr.time : 5;
+  const lineElapsed = sec - curr.time;
+  const pct = Math.min(Math.max(lineElapsed / lineDuration, 0), 1);
+  const idx = Math.floor(pct * chars.length);
+  const rem = (pct * chars.length) - idx;
+
+  const spans = currEl.children;
+  for (let i = 0; i < spans.length; i++) {
+    if (i < idx) spans[i].style.color = "#f9a8d4";
+    else if (i > idx) spans[i].style.color = "#555";
+    else spans[i].style.color = lerpColor("#555", "#f9a8d4", rem);
   }
 }
 
