@@ -82,7 +82,7 @@ function stop(){
 }
 
 function toggleViz(){
-  if (state) updateState({ visible: state.visible === false });
+  if (state) updateState({ visible: state.visible === false, isPlaying: false });
 }
 
 let shiftTimer = null;
