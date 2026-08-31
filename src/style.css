@@ -252,26 +252,24 @@ body {
   justify-content: center;
 }
 
-.pl-song-info {
+.pl-viz-btn {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 6px;
+  background: #4b5563;
+  color: #fff;
   font-size: 13px;
-  color: #888;
-  margin-bottom: 16px;
+  cursor: pointer;
+  transition: background 0.2s;
 }
 
-.pl-lyrics {
-  text-align: center;
-  width: 100%;
+.pl-viz-btn:hover {
+  background: #6b7280;
 }
 
-.pl-lyric-line {
-  padding: 3px 0;
-  font-size: 15px;
-  transition: color 0.3s, font-size 0.3s;
-}
-
-.pl-lyric-line.dimmed {
-  color: #444;
-  font-size: 13px;
+.pl-viz-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 /* ---- Shared ---- */
