@@ -127,7 +127,7 @@ async function shift(delta) {
 }
 
 function handleState(newState) {
-  if (!newState || newState.visible === false) {
+  if (!newState) {
     state = null; lrcParsed = [];
     cancelAnimationFrame(animFrame);
     document.querySelector(".lyrics-prev").textContent = "";
@@ -140,6 +140,14 @@ function handleState(newState) {
   lrcParsed = parseLRC(state.lrcRaw || "") || [];
   isPlaying = state.isPlaying;
   offsetRef = state.offset || 0;
+
+  if (newState.visible === false) {
+    cancelAnimationFrame(animFrame);
+    document.querySelector(".lyrics-prev").textContent = "";
+    document.querySelector(".lyrics-current").textContent = "歌词已隐藏";
+    document.querySelector(".lyrics-next").textContent = "";
+    return;
+  }
 
   if (userRole === "GM") updateControls(state);
 
