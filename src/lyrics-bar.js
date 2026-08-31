@@ -11,6 +11,7 @@ let isPlaying = false;
 let localHidden = false;
 let isLocked = false;
 let userRole = null;
+let offsetRef = 0;
 
 OBR.onReady(async () => {
   userRole = await OBR.player.getRole();
@@ -105,15 +106,24 @@ async function toggleViz() {
   });
 }
 
+let shiftTimer = null;
+
 async function shift(delta) {
   if (!state) return;
-  const elapsed = (state.elapsed || 0) + (state.isPlaying ? Date.now() - state.timestamp : 0);
-  const newOffset = (state.offset || 0) + delta;
-  await setState({
-    songId: state.songId, songName: state.songName, artist: state.artist,
-    lrcRaw: state.lrcRaw, elapsed, isPlaying: state.isPlaying || false,
-    offset: newOffset, timestamp: Date.now(), visible: state.visible !== false,
-  });
+  // Apply immediately to the local authoritative offset
+  offsetRef += delta;
+
+  // Coalesce rapid clicks into a single trailing write
+  clearTimeout(shiftTimer);
+  shiftTimer = setTimeout(async () => {
+    if (!state) return;
+    const elapsed = (state.elapsed || 0) + (state.isPlaying ? Date.now() - state.timestamp : 0);
+    await setState({
+      songId: state.songId, songName: state.songName, artist: state.artist,
+      lrcRaw: state.lrcRaw, elapsed, isPlaying: state.isPlaying || false,
+      offset: offsetRef, timestamp: Date.now(), visible: state.visible !== false,
+    });
+  }, 120);
 }
 
 function handleState(newState) {
@@ -129,6 +139,7 @@ function handleState(newState) {
   state = newState;
   lrcParsed = parseLRC(state.lrcRaw || "") || [];
   isPlaying = state.isPlaying;
+  offsetRef = state.offset || 0;
 
   if (userRole === "GM") updateControls(state);
 
@@ -137,7 +148,7 @@ function handleState(newState) {
     startLoop();
   } else {
     cancelAnimationFrame(animFrame);
-    renderAt((state.elapsed || 0) / 1000 + (state.offset || 0));
+    renderAt((state.elapsed || 0) / 1000 + offsetRef);
   }
 }
 
@@ -153,7 +164,7 @@ function updateControls(s) {
 function startLoop() {
   function loop() {
     if (!state || !state.isPlaying) { isPlaying = false; return; }
-    const sec = ((state.elapsed || 0) + (Date.now() - state.timestamp)) / 1000 + (state.offset || 0);
+    const sec = ((state.elapsed || 0) + (Date.now() - state.timestamp)) / 1000 + offsetRef;
     let idx = lrcParsed.findIndex((l) => l.time > sec);
     if (idx === -1) idx = lrcParsed.length;
     renderLyrics(sec, idx);
